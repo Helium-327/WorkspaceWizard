@@ -8,10 +8,6 @@ color 0a
 :: 初始化变量
 set "cmd=cmd.exe"
 
-:: 打印版本信息
-echo %date% %time% 
-echo Windows Version: 
-ver
 
 ::加载配置文件
 call config.bat
@@ -201,12 +197,10 @@ exit /b 0
     echo ================================
     setLOCAL enabledelayedexpansion
     echo "当前工作空间:"
-    cd /d %PROJECT_ROOT_PATH%
-    set count=0
-    for /d %%i in (WS-*) do (
+
+    for %%i in (%WORKSPACE_ROOT_PATH%\\*.code-workspace) do (
         set /a count+=1
-        set name=%%i
-        set name=!name:WS-=!
+        set name=%%~ni
         echo !count!. !name!
     )
     echo ================================
@@ -236,12 +230,10 @@ exit /b 0
     echo ================================
     setLOCAL enabledelayedexpansion
     echo "当前工作空间:"
-    cd /d %PROJECT_ROOT_PATH%
     set count=0
-    for /d %%i in (WS-*) do (
+    for %%i in (%WORKSPACE_ROOT_PATH%\\*.code-workspace) do (
         set /a count+=1
-        set name=%%i
-        set name=!name:WS-=!
+        set name=%%~ni
         echo !count!. !name!
     )
     set /p inputName="Please enter the workspace name (or q to back): "
@@ -283,12 +275,10 @@ exit /b 0
     echo ::         List All Workspaces        ::
     echo ::::::::::::::::::::::::::::::::::::::::
     setLOCAL enabledelayedexpansion
-    cd /d %PROJECT_ROOT_PATH%
     set count=0
-    for /d %%i in (WS-*) do (
+    for %%i in (%WORKSPACE_ROOT_PATH%\\*.code-workspace) do (
         set /a count+=1
-        set name=%%i
-        set name=!name:WS-=!
+        set name=%%~ni
         echo !count!. !name!
     )
     echo ================================
