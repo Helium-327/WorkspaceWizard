@@ -1,11 +1,19 @@
 @echo off
+setlocal
 title Workspace Manager
 color 0a
-
 :: Gomez groom dev 2023-11-21
 :: Batch script for workspace management
+
+:: 初始化变量
 set "cmd=cmd.exe"
 
+:: 打印版本信息
+echo %date% %time% 
+echo Windows Version: 
+ver
+
+::加载配置文件
 call config.bat
 
 if not defined WORKSPACE_ROOT_PATH (
@@ -33,6 +41,7 @@ if not defined LOG_FILE (
     echo WORKSPACE_ROOT_PATH:  %WORKSPACE_ROOT_PATH%
     echo PROJECT_ROOT_PATH:    %PROJECT_ROOT_PATH%
     echo LOG_FILE:             %LOG_FILE%
+    echo remoteAuthority:      %remoteAuthority%
     echo ========================================
     echo "c. Create Workspace"
     echo "r. Run Workspace"
@@ -122,7 +131,7 @@ if not defined LOG_FILE (
     set WORKSPACES_PATH=%WORKSPACE_ROOT_PATH%\\%WORKSPACE_NAME%
     set FOLDER_PATH=%PROJECT_ROOT_PATH%\\WS-%inputName%
 
-    if exist "%WORKSPACES_PATH%" (
+    if exist %WORKSPACES_PATH% (
         echo Workspace:%WORKSPACES_PATH% already exists. 
         echo Starting workspace...
         cmd /c start %WORKSPACES_PATH%
@@ -139,7 +148,7 @@ if not defined LOG_FILE (
             echo     ],
             echo     "settings": {}
             echo }
-        ) > "%WORKSPACES_PATH%"
+        ) > %WORKSPACES_PATH%
         echo [%DATE% %TIME%] 创建工作空间：%WORKSPACE_NAME% >> "%LOG_FILE%"
         echo Workspace created.
         echo Starting workspace...
@@ -150,24 +159,25 @@ if not defined LOG_FILE (
     goto :mainMenu
 
 :createUbuntuWorkspace
+    setLOCAL enabledelayedexpansion
     set /p inputName="Please enter the workspace name: "
     set WORKSPACE_NAME=%inputName%.code-workspace
     set WORKSPACES_PATH=%WORKSPACE_ROOT_PATH%\\%WORKSPACE_NAME%
     set FOLDER_PATH=%PROJECT_ROOT_PATH%\\Wsl-%inputName%
 
-    if not exist "%WORKSPACES_PATH%" (
-        mkdir "%FOLDER_PATH%"
+    if not exist %WORKSPACES_PATH% (
+        mkdir %FOLDER_PATH%
         (
             echo {
             echo     "folders": [
             echo         {
-            echo             "uri": "vscode-remote://wsl+ubuntu2204/mnt/d/AI_Research/WS-Hub/WS-%inputName%"
+            echo             "uri": "vscode-remote://%remoteAuthority%/mnt/d/AI_Research/WS-Hub/Wsl-%inputName%"
             echo         }
             echo     ],
-            echo     "remoteAuthority": "wsl+ubuntu2204",
+            echo     "remoteAuthority": "%remoteAuthority%",
             echo     "settings": {}
             echo }
-        ) > "%WORKSPACES_PATH%"
+        ) > %WORKSPACES_PATH%
         echo [%DATE% %TIME%] 创建工作空间：%WORKSPACE_NAME% >> "%LOG_FILE%"
         echo Workspace created.
         echo Starting workspace...
@@ -207,7 +217,7 @@ exit /b 0
     set WORKSPACE_NAME=%inputName%.code-workspace
     set WORKSPACES_PATH=%WORKSPACE_ROOT_PATH%\\%WORKSPACE_NAME%
 
-    if exist "%WORKSPACES_PATH%" (
+    if exist %WORKSPACES_PATH% (
         cmd /c start %WORKSPACES_PATH%
     ) else (
         echo Workspace does not exist.
@@ -245,18 +255,18 @@ exit /b 0
     echo FOLDER_PATH:       %FOLDER_PATH%
     echo WORKSPACES_PATH:   %WORKSPACES_PATH% 
 
-    if exist "%WORKSPACES_PATH%" (
+    if exist %WORKSPACES_PATH% (
         del /f /q %WORKSPACES_PATH%
-        echo [%DATE% %TIME%] 删除工作空间：%WORKSPACE_NAME% >> "%LOG_FILE%"
+        echo [%DATE% %TIME%] 删除工作空间：%WORKSPACE_NAME% >> %LOG_FILE%
         echo Workspace deleted.
         pause
     ) else (
         echo %WORKSPACES_PATH% does not exist.
         pause
     )
-    if exist "%FOLDER_PATH%" (
+    if exist %FOLDER_PATH% (
         rd /s /q %FOLDER_PATH%
-        echo [%DATE% %TIME%] 删除项目目录：%FOLDER_PATH% >> "%LOG_FILE%"
+        echo [%DATE% %TIME%] 删除项目目录：%FOLDER_PATH% >> %LOG_FILE%
         echo Project deleted.
         pause
     ) else (
