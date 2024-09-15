@@ -164,7 +164,7 @@ if not defined LOG_FILE (
             echo             "uri": "vscode-remote://wsl+ubuntu2204/mnt/d/AI_Research/WS-Hub/WS-%inputName%"
             echo         }
             echo     ],
-            echo     "remoteAuthority": "wsl+Ubuntu-20.04",
+            echo     "remoteAuthority": "wsl+ubuntu2204",
             echo     "settings": {}
             echo }
         ) > "%WORKSPACES_PATH%"
