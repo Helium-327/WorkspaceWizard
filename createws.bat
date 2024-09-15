@@ -224,6 +224,16 @@ exit /b 0
     echo ::            Delete Workspace        ::
     echo ::::::::::::::::::::::::::::::::::::::::
     echo ================================
+    setLOCAL enabledelayedexpansion
+    echo "当前工作空间:"
+    cd /d %PROJECT_ROOT_PATH%
+    set count=0
+    for /d %%i in (WS-*) do (
+        set /a count+=1
+        set name=%%i
+        set name=!name:WS-=!
+        echo !count!. !name!
+    )
     set /p inputName="Please enter the workspace name (or q to back): "
 
     if "%inputName%"=="q" goto :mainMenu
