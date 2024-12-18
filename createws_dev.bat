@@ -1,13 +1,12 @@
 @echo off
+setlocal enabledelayedexpansion
 title Workspace Manager
 color 0a
 
-:: Gomez groom dev 2023-11-21
-:: Batch script for workspace management
-set "cmd=cmd.exe"
-
+:: 加载配置文件
 call config.bat
 
+:: 检查必要的环境变量
 if not defined WORKSPACE_ROOT_PATH (
     echo Error: WORKSPACE_ROOT_PATH not defined.
     exit /b 1
@@ -26,9 +25,9 @@ if not defined LOG_FILE (
 :: 主菜单
 :mainMenu
     cls
-    echo ::::::::::::::::::::::::::::::::::::::::
+    echo ::::::::::::::::::::::::::::::::::::::::::
     echo ::         Workspace Manager          ::
-    echo ::::::::::::::::::::::::::::::::::::::::
+    echo ::::::::::::::::::::::::::::::::::::::::::
     echo "当前环境变量:"
     echo WORKSPACE_ROOT_PATH:  %WORKSPACE_ROOT_PATH%
     echo PROJECT_ROOT_PATH:    %PROJECT_ROOT_PATH%
@@ -43,66 +42,71 @@ if not defined LOG_FILE (
     echo ========================================
     set /p choice="Please select an option (c/r/d/l/s/q): "
 
-    if "%choice%"=="c" goto :createWorkspace
-    if "%choice%"=="r" goto :runWorkspace
-    if "%choice%"=="d" goto :deleteWorkspace
-    if "%choice%"=="l" goto :listWorkspaces
-    if "%choice%"=="s" goto :setConfig
-    if "%choice%"=="q" goto :eof
+    if /i "%choice%"=="c" goto createWorkspace
+    if /i "%choice%"=="r" goto runWorkspace
+    if /i "%choice%"=="d" goto deleteWorkspace
+    if /i "%choice%"=="l" goto listWorkspaces
+    if /i "%choice%"=="s" goto setConfig
+    if /i "%choice%"=="q" goto eof
+
+    echo Invalid choice. Please try again.
+    pause
+    goto mainMenu
 
 :: 设置config文件中的内容
 :setConfig
     cls
-    echo ::::::::::::::::::::::::::::::::::::::::
+    echo ::::::::::::::::::::::::::::::::::::::::::
     echo ::             Set Config             ::
-    echo ::::::::::::::::::::::::::::::::::::::::
+    echo ::::::::::::::::::::::::::::::::::::::::::
     echo ================================
-    echo "1. 手动配置"
-    echo "d. 一键恢复默认配置"
-    echo "q. 退出"
+    echo "1. Manually set configuration"
+    echo "d. Restore default configuration"
+    echo "q. Quit"
     echo ================================
-    set /p choice="请选择："
+    set /p choice="Please choose an option: "
 
-    if "%choice%"=="1" (
-        set /p WORKSPACE_ROOT_PATH="请输入工作空间根目录路径："
-        set /p PROJECT_ROOT_PATH="请输入项目根目录路径："
-        set /p LOG_FILE="请输入日志文件路径："
+    if "%choice%"=="1" goto updateConfig
+    if "%choice%"=="d" goto restoreDefaultConfig
+    if "%choice%"=="q" goto mainMenu
 
-        (
-            echo set WORKSPACE_ROOT_PATH=%WORKSPACE_ROOT_PATH%
-            echo set PROJECT_ROOT_PATH=%PROJECT_ROOT_PATH%
-            echo set LOG_FILE=%LOG_FILE%
-        ) > config.bat
+    echo Invalid choice. Please try again.
+    pause
+    goto setConfig
 
-        echo 配置文件已更新。
-        pause
-        goto :mainMenu
-    )
+:updateConfig
+    set /p WORKSPACE_ROOT_PATH="Enter workspace root path: "
+    set /p PROJECT_ROOT_PATH="Enter project root path: "
+    set /p LOG_FILE="Enter log file path: "
 
-    if "%choice%"=="d" (
-        call default.config.bat
-        (
-            echo set WORKSPACE_ROOT_PATH=%WORKSPACE_ROOT_PATH%
-            echo set PROJECT_ROOT_PATH=%PROJECT_ROOT_PATH%
-            echo set LOG_FILE=%LOG_FILE%
-        ) > config.bat
+    (
+        echo set WORKSPACE_ROOT_PATH=%WORKSPACE_ROOT_PATH%
+        echo set PROJECT_ROOT_PATH=%PROJECT_ROOT_PATH%
+        echo set LOG_FILE=%LOG_FILE%
+    ) > config.bat
 
-        echo 配置文件已恢复到默认值。
-        pause
-        goto :mainMenu
-    )
+    echo Configuration file has been updated.
+    pause
+    goto mainMenu
 
-    if "%choice%"=="q" (
-        goto :mainMenu
-    )
+:restoreDefaultConfig
+    call default.config.bat
+    (
+        echo set WORKSPACE_ROOT_PATH=%WORKSPACE_ROOT_PATH%
+        echo set PROJECT_ROOT_PATH=%PROJECT_ROOT_PATH%
+        echo set LOG_FILE=%LOG_FILE%
+    ) > config.bat
+
+    echo Configuration file has been restored to default.
+    pause
+    goto mainMenu
 
 :: 创建工作空间
 :createWorkspace
-    setlocal enabledelayedexpansion
     cls
-    echo ::::::::::::::::::::::::::::::::::::::::
+    echo ::::::::::::::::::::::::::::::::::::::::::
     echo ::         Create Workspace           ::
-    echo ::::::::::::::::::::::::::::::::::::::::
+    echo ::::::::::::::::::::::::::::::::::::::::::
     echo ================================
     echo "1. Windows"
     echo "2. Ubuntu"
@@ -110,26 +114,40 @@ if not defined LOG_FILE (
     echo ================================
     set /p platform="Please select platform (1/2/q): "
 
-    if "%platform%"=="1" goto :createWindowsWorkspace
-    if "%platform%"=="2" goto :createUbuntuWorkspace
-    if "%platform%"=="q" goto :mainMenu
-    goto :createWorkspace
+    if "%platform%"=="1" goto createWindowsWorkspace
+    if "%platform%"=="2" goto createUbuntuWorkspace
+    if "%platform%"=="q" goto mainMenu
+
+    echo Invalid choice. Please try again.
+    pause
+    goto createWorkspace
 
 :createWindowsWorkspace
-    setlocal enabledelayedexpansion
     set /p inputName="Please enter the workspace name: "
-    set WORKSPACE_NAME=%inputName%.code-workspace
-    set WORKSPACES_PATH=%WORKSPACE_ROOT_PATH%\\%WORKSPACE_NAME%
-    set FOLDER_PATH=%PROJECT_ROOT_PATH%\\WS-%inputName%
+    call :createWorkspaceHelper %inputName% WS-
+    goto mainMenu
 
-    if exist "%WORKSPACES_PATH%" (
-        echo Workspace:%WORKSPACES_PATH% already exists. 
+:createUbuntuWorkspace
+    set /p inputName="Please enter the workspace name: "
+    call :createWorkspaceHelper %inputName% Wsl-
+    goto mainMenu
+
+:createWorkspaceHelper
+    setlocal enabledelayedexpansion
+    set inputName=%1
+    set prefix=%2
+    set WORKSPACE_NAME=!prefix!%inputName%.code-workspace
+    set WORKSPACES_PATH=%WORKSPACE_ROOT_PATH%\!WORKSPACE_NAME!
+    set FOLDER_PATH=%PROJECT_ROOT_PATH%\!prefix!%inputName%
+
+    echo !WORKSPACES_PATH!
+    if exist !WORKSPACES_PATH! (
+        echo Workspace:!WORKSPACES_PATH! already exists.
         echo Starting workspace...
-        cmd /c start %WORKSPACES_PATH%
+        start !WORKSPACES_PATH!
         pause
     ) else (
-        mkdir %FOLDER_PATH%
-        echo %FOLDER_PATH%
+        mkdir !FOLDER_PATH!
         (
             echo {
             echo     "folders": [
@@ -139,153 +157,115 @@ if not defined LOG_FILE (
             echo     ],
             echo     "settings": {}
             echo }
-        ) > "%WORKSPACES_PATH%"
-        echo [%DATE% %TIME%] 创建工作空间：%WORKSPACE_NAME% >> "%LOG_FILE%"
+        ) > !WORKSPACES_PATH!
+        echo [%DATE% %TIME%] Created workspace: !WORKSPACE_NAME! >> "%LOG_FILE%"
         echo Workspace created.
         echo Starting workspace...
-        echo %WORKSPACES_PATH%
+        echo !WORKSPACES_PATH!
         pause
-        cmd /c start %WORKSPACES_PATH%
+        start !WORKSPACES_PATH!
     )
-    goto :mainMenu
-
-:createUbuntuWorkspace
-    set /p inputName="Please enter the workspace name: "
-    set WORKSPACE_NAME=%inputName%.code-workspace
-    set WORKSPACES_PATH=%WORKSPACE_ROOT_PATH%\\%WORKSPACE_NAME%
-    set FOLDER_PATH=%PROJECT_ROOT_PATH%\\Wsl-%inputName%
-
-    if not exist "%WORKSPACES_PATH%" (
-        mkdir "%FOLDER_PATH%"
-        (
-            echo {
-            echo     "folders": [
-            echo         {
-            echo             "uri": "vscode-remote://wsl+ubuntu2204/mnt/d/AI_Research/WS-Hub/WS-%inputName%"
-            echo         }
-            echo     ],
-            echo     "remoteAuthority": "wsl+Ubuntu2204",
-            echo     "settings": {}
-            echo }
-        ) > "%WORKSPACES_PATH%"
-        echo [%DATE% %TIME%] 创建工作空间：%WORKSPACE_NAME% >> "%LOG_FILE%"
-        echo Workspace created.
-        echo Starting workspace...
-        cmd /c start %WORKSPACES_PATH%
-        pause
-    ) else (
-        echo Workspace already exists.
-        echo Please try to run the workspace.
-        pause
-    )
-    goto :mainMenu
-endlocal
-exit /b 0
+    endlocal
+    exit /b 0
 
 :: 运行工作空间
 :runWorkspace
     cls
-    echo ::::::::::::::::::::::::::::::::::::::::
+    echo ::::::::::::::::::::::::::::::::::::::::::
     echo ::            Run Workspace           ::
-    echo ::::::::::::::::::::::::::::::::::::::::
+    echo ::::::::::::::::::::::::::::::::::::::::::
     echo ================================
-    setLOCAL enabledelayedexpansion
-    echo "当前工作空间:"
-    cd /d %PROJECT_ROOT_PATH%
+    echo Current workspaces:
     set count=0
-    for /d %%i in (WS-*) do (
+    for %%i in (%WORKSPACE_ROOT_PATH%\*.code-workspace) do (
         set /a count+=1
-        set name=%%i
-        set name=!name:WS-=!
+        set name=%%~ni
         echo !count!. !name!
     )
     echo ================================
     set /p inputName="Please enter the workspace name (or q to back): "
 
-    if "%inputName%"=="q" goto :mainMenu
+    if "%inputName%"=="q" goto mainMenu
 
     set WORKSPACE_NAME=%inputName%.code-workspace
-    set WORKSPACES_PATH=%WORKSPACE_ROOT_PATH%\\%WORKSPACE_NAME%
+    set WORKSPACES_PATH=%WORKSPACE_ROOT_PATH%\%WORKSPACE_NAME%
 
-    if exist "%WORKSPACES_PATH%" (
-        cmd /c start %WORKSPACES_PATH%
+    if exist %WORKSPACES_PATH% (
+        start %WORKSPACES_PATH%
     ) else (
         echo Workspace does not exist.
         echo Please create a new workspace.
         pause
     )
-    goto :runWorkspace
-    exit /b 0
+    goto mainMenu
 
 :: 删除工作空间
 :deleteWorkspace
     cls
-    echo ::::::::::::::::::::::::::::::::::::::::
+    echo ::::::::::::::::::::::::::::::::::::::::::
     echo ::            Delete Workspace        ::
-    echo ::::::::::::::::::::::::::::::::::::::::
+    echo ::::::::::::::::::::::::::::::::::::::::::
     echo ================================
-    setLOCAL enabledelayedexpansion
-    echo "当前工作空间:"
-    cd /d %PROJECT_ROOT_PATH%
+    echo Current workspaces:
     set count=0
-    for /d %%i in (WS-*) do (
+    for %%i in (%WORKSPACE_ROOT_PATH%\*.code-workspace) do (
         set /a count+=1
-        set name=%%i
-        set name=!name:WS-=!
+        set name=%%~ni
         echo !count!. !name!
     )
+    echo ================================
     set /p inputName="Please enter the workspace name (or q to back): "
 
-    if "%inputName%"=="q" goto :mainMenu
+    if "%inputName%"=="q" goto mainMenu
 
-    set FOLDER_PATH=%PROJECT_ROOT_PATH%\\WS-%inputName%
+    set FOLDER_PATH=%PROJECT_ROOT_PATH%\WS-%inputName%
     set WORKSPACE_NAME=%inputName%.code-workspace
-    set WORKSPACES_PATH=%WORKSPACE_ROOT_PATH%\\%WORKSPACE_NAME%
+    set WORKSPACES_PATH=%WORKSPACE_ROOT_PATH%\%WORKSPACE_NAME%
 
     echo FOLDER_PATH:       %FOLDER_PATH%
-    echo WORKSPACES_PATH:   %WORKSPACES_PATH% 
+    echo WORKSPACE_NAME:    %WORKSPACE_NAME%
+    echo WORKSPACES_PATH:   %WORKSPACES_PATH%
 
-    if exist "%WORKSPACES_PATH%" (
-        del /f /q %WORKSPACES_PATH%
-        echo [%DATE% %TIME%] 删除工作空间：%WORKSPACE_NAME% >> "%LOG_FILE%"
+    if exist %WORKSPACES_PATH% (
+        echo %WORKSPACES_PATH% exists.
+        del /f "%WORKSPACES_PATH%"
+        echo [%DATE% %TIME%] Deleted workspace: %WORKSPACE_NAME% >> %LOG_FILE%
         echo Workspace deleted.
         pause
     ) else (
         echo %WORKSPACES_PATH% does not exist.
         pause
     )
-    if exist "%FOLDER_PATH%" (
-        rd /s /q %FOLDER_PATH%
-        echo [%DATE% %TIME%] 删除项目目录：%FOLDER_PATH% >> "%LOG_FILE%"
+
+    if exist %FOLDER_PATH% (
+        rd /s /q "%FOLDER_PATH%"
+        echo [%DATE% %TIME%] Deleted project directory: %FOLDER_PATH% >> %LOG_FILE%
         echo Project deleted.
         pause
     ) else (
         echo %FOLDER_PATH% does not exist.
         pause
     )
-    goto :deleteWorkspace
-    exit /b 0
+    goto mainMenu
 
 :: 列出工作空间
 :listWorkspaces
     cls
-    echo ::::::::::::::::::::::::::::::::::::::::
+    echo ::::::::::::::::::::::::::::::::::::::::::
     echo ::         List All Workspaces        ::
-    echo ::::::::::::::::::::::::::::::::::::::::
-    setLOCAL enabledelayedexpansion
-    cd /d %PROJECT_ROOT_PATH%
+    echo ::::::::::::::::::::::::::::::::::::::::::
+    echo ================================
     set count=0
-    for /d %%i in (WS-*) do (
+    for %%i in (%WORKSPACE_ROOT_PATH%\*.code-workspace) do (
         set /a count+=1
-        set name=%%i
-        set name=!name:WS-=!
+        set name=%%~ni
         echo !count!. !name!
     )
     echo ================================
     pause
-    goto :mainMenu
-    exit /b 0
+    goto mainMenu
 
 :: 退出
 :eof
+endlocal
 exit /b 0
